@@ -85,6 +85,22 @@ h1,h2,h3{font-family:var(--serif)!important;color:var(--ink);letter-spacing:-0.0
 .badge--bad{background:var(--high-bg);color:var(--high);}
 .badge--neutral{background:#EEF1F6;color:var(--muted);}
 
+/* Quick scan */
+.flag{background:var(--surface);border:1px solid var(--line);border-left:5px solid #8C97AB;border-radius:8px;padding:.8rem 1rem;margin:.6rem 0;}
+.flag--high{border-left-color:var(--high);}
+.flag--medium{border-left-color:var(--med);}
+.flag__head{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.flag__title{font-family:var(--serif);font-weight:700;font-size:1.1rem;color:var(--ink);}
+.flag__meta{color:var(--muted);font-size:.82rem;margin-left:auto;}
+.flag__why{color:var(--muted);font-size:.92rem;margin:.25rem 0 .4rem;}
+.flag__snip{font-family:var(--serif);font-size:.95rem;line-height:1.55;color:var(--ink);margin:.35rem 0 0;padding-left:.7rem;border-left:2px solid var(--mark);}
+.flag__snip mark{background:var(--mark);color:inherit;padding:0 .1em;border-radius:2px;}
+.sev--high{background:var(--high-bg);color:var(--high);}
+.sev--medium{background:var(--med-bg);color:var(--med);}
+.sev--info{background:#EEF1F6;color:var(--muted);}
+.facts__row{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.55rem 0;}
+.facts__label{font-weight:700;color:var(--ink);min-width:6.5rem;font-size:.9rem;}
+
 /* Controls */
 .stButton>button{border-radius:8px;font-weight:600;}
 </style>"""
@@ -239,3 +255,36 @@ def document_html(pages: list[dict], selected, fragments: list[str]) -> str:
             f'<div class="doc-page__text">{body}</div></div>'
         )
     return f'<div class="doc">{"".join(parts)}</div>'
+
+
+PRIORITY = {"high": "Look closely", "medium": "Check", "info": "Note"}
+FACT_TITLES = {"money": "Money", "periods": "Time periods", "dates": "Dates"}
+
+
+def scan_html(findings: list[dict]) -> str:
+    cards = []
+    for f in findings:
+        shown = ", ".join(map(str, f["pages"][:6])) + ("\u2026" if len(f["pages"]) > 6 else "")
+        meta = f"{f['count']} mention{'s' if f['count'] != 1 else ''}, page{'s' if len(f['pages']) != 1 else ''} {shown}"
+        snips = "".join(
+            f'<p class="flag__snip">{esc(h["before"])}<mark>{esc(h["match"])}</mark>{esc(h["after"])}</p>'
+            for h in f["hits"][:2]
+        )
+        cards.append(
+            f'<div class="flag flag--{f["severity"]}"><div class="flag__head">'
+            f'<span class="flag__title">{esc(f["label"])}</span>'
+            f'<span class="badge sev--{f["severity"]}">{PRIORITY[f["severity"]]}</span>'
+            f'<span class="flag__meta">{esc(meta)}</span></div>'
+            f'<div class="flag__why">{esc(f["why"])}</div>{snips}</div>'
+        )
+    return "".join(cards)
+
+
+def facts_html(facts: dict) -> str:
+    rows = []
+    for kind, title in FACT_TITLES.items():
+        items = facts.get(kind, [])
+        if items:
+            chips = "".join(f'<span class="chip">{esc(i["text"])} (page {i["page"]})</span>' for i in items)
+            rows.append(f'<div class="facts__row"><span class="facts__label">{title}</span>{chips}</div>')
+    return "".join(rows)

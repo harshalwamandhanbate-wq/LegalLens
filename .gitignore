@@ -2,9 +2,12 @@
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Secrets
 .env
 
-# Keep real contracts and test documents out of the repo
+# Keep real contracts and test documents out of the repo...
 *.pdf
+# ...but keep the fictional sample used by the app and the tests
+!samples/sample_contract.pdf
